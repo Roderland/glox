@@ -45,7 +45,81 @@ func (p *parser) statement() stmt {
 	if p.match(LBRACE) {
 		return p.blockStatement()
 	}
+	if p.match(IF) {
+		return p.ifStatement()
+	}
+	if p.match(WHILE) {
+		return p.whileStatement()
+	}
+	if p.match(FOR) {
+		return p.forStatement()
+	}
 	return p.expressionStatement()
+}
+
+func (p *parser) forStatement() stmt {
+	p.consume(LPAREN, "Expect '(' after 'for'")
+	var initializer stmt
+	if p.match(SEMICOLON) {
+		initializer = nil
+	} else if p.match(VAR) {
+		initializer = p.varStatement()
+	} else {
+		initializer = p.expressionStatement()
+	}
+	var condition expr = &literal{true}
+	if !p.eof() && p.tokens[p.cur].ttype != SEMICOLON {
+		condition = p.expression()
+	}
+	p.consume(SEMICOLON, "Expect ';' after loop condition")
+	var increment expr
+	if !p.eof() && p.tokens[p.cur].ttype != RPAREN {
+		increment = p.expression()
+	}
+	p.consume(RPAREN, "Expect ')' after for clauses")
+	body := p.statement()
+	if increment != nil {
+		stmts := make([]stmt, 0)
+		stmts = append(stmts, body, &exprStmt{increment})
+		body = &blockStmt{stmts}
+	}
+	body = &whileStmt{
+		condition: condition,
+		body:      body,
+	}
+	if initializer != nil {
+		stmts := make([]stmt, 0)
+		stmts = append(stmts, initializer, body)
+		body = &blockStmt{stmts}
+	}
+	return body
+}
+
+func (p *parser) whileStatement() stmt {
+	p.consume(LPAREN, "Expect '(' after while")
+	condition := p.expression()
+	p.consume(RPAREN, "Expect ')' after condition")
+	body := p.statement()
+	return &whileStmt{
+		condition: condition,
+		body:      body,
+	}
+}
+
+func (p *parser) ifStatement() stmt {
+	p.consume(LPAREN, "Expect '(' after 'if'")
+	condition := p.expression()
+	p.consume(RPAREN, "Expect ')' after condition")
+	thenBranch := p.statement()
+	var elseBranch stmt = nil
+	if p.match(ELSE) {
+		elseBranch = p.statement()
+	}
+	return &ifStmt{
+		condition:  condition,
+		thenBranch: thenBranch,
+		elseBranch: elseBranch,
+	}
 }
 
 func (p *parser) blockStatement() stmt {
@@ -74,7 +148,7 @@ func (p *parser) expression() expr {
 }
 
 func (p *parser) assignment() expr {
-	left := p.equality()
+	left := p.or()
 	if p.match(EQUAL) {
 		equals := p.tokens[p.cur-1]
 		right := p.assignment()
@@ -86,6 +160,34 @@ func (p *parser) assignment() expr {
 			}
 		}
 		exitWithErr("[ line %d ] Operator '=' expect a variable at left", equals.line)
+	}
+	return left
+}
+
+func (p *parser) or() expr {
+	left := p.and()
+	for p.match(OR) {
+		operator := p.tokens[p.cur-1]
+		right := p.and()
+		left = &logical{
+			left:     left,
+			operator: operator,
+			right:    right,
+		}
+	}
+	return left
+}
+
+func (p *parser) and() expr {
+	left := p.equality()
+	for p.match(AND) {
+		operator := p.tokens[p.cur-1]
+		right := p.equality()
+		left = &logical{
+			left:     left,
+			operator: operator,
+			right:    right,
+		}
 	}
 	return left
 }

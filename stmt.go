@@ -17,4 +17,13 @@ type (
 	blockStmt struct {
 		stmts []stmt
 	}
+	ifStmt struct {
+		condition  expr
+		thenBranch stmt
+		elseBranch stmt
+	}
+	whileStmt struct {
+		condition expr
+		body      stmt
+	}
 )

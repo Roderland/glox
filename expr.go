@@ -26,4 +26,9 @@ type (
 		name  token
 		right expr
 	}
+	logical struct {
+		left     expr
+		operator token
+		right    expr
+	}
 )

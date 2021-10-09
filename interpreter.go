@@ -22,6 +22,20 @@ func (i *interpreter) run() {
 	}
 }
 
+func (w *whileStmt) exec(scopes scopeList) {
+	for isTrue(w.condition.eval(scopes)) {
+		w.body.exec(scopes)
+	}
+}
+
+func (i *ifStmt) exec(scope scopeList) {
+	if isTrue(i.condition.eval(scope)) {
+		i.thenBranch.exec(scope)
+	} else if i.elseBranch != nil {
+		i.elseBranch.exec(scope)
+	}
+}
+
 func (b *blockStmt) exec(scopes scopeList) {
 	scopes.push(*newScope(scopes.peek()))
 	for _, s := range b.stmts {
@@ -45,6 +59,20 @@ func (p *printStmt) exec(scopes scopeList) {
 
 func (e *exprStmt) exec(scopes scopeList) {
 	e.body.eval(scopes)
+}
+
+func (l *logical) eval(scopes scopeList) interface{} {
+	left := l.left.eval(scopes)
+	if l.operator.ttype == OR {
+		if isTrue(left) {
+			return left
+		}
+	} else {
+		if !isTrue(left) {
+			return left
+		}
+	}
+	return l.right.eval(scopes)
 }
 
 func (a *assign) eval(scopes scopeList) interface{} {
@@ -104,10 +132,7 @@ func (u *unary) eval(scopes scopeList) interface{} {
 		checkNumber(u.operator, right)
 		return -(right.(float64))
 	case BANG:
-		if right == nil || right == false {
-			return true
-		}
-		return false
+		return !isTrue(right)
 	}
 	return nil
 }
@@ -126,4 +151,11 @@ func checkNumber(operator token, objects ...interface{}) {
 			exitWithErr("[ line %d ] Operator '%s' expect number as operands", operator.line, operator.text)
 		}
 	}
+}
+
+func isTrue(o interface{}) bool {
+	if o == nil || o == false {
+		return false
+	}
+	return true
 }
