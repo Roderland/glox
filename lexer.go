@@ -134,11 +134,11 @@ func (l *lexer) number() {
 		}
 	}
 
-	s, err := strconv.Atoi(l.source[l.left:l.right])
+	s, err := strconv.ParseFloat(l.source[l.left:l.right], 64)
 	if err != nil {
 		exitWithErr("[ line %d ] Illegal number at '%s'", l.line, l.source[l.left:l.right])
 	}
-	l.add(NUMBER, float64(s))
+	l.add(NUMBER, s)
 }
 
 func (l *lexer) string() {

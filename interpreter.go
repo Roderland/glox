@@ -54,7 +54,11 @@ func (v *varStmt) exec(scopes scopeList) {
 
 func (p *printStmt) exec(scopes scopeList) {
 	value := p.body.eval(scopes)
-	fmt.Println(value)
+	if value == nil {
+		fmt.Println("nil")
+	} else {
+		fmt.Println(value)
+	}
 }
 
 func (e *exprStmt) exec(scopes scopeList) {
