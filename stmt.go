@@ -29,4 +29,13 @@ type (
 	}
 	breakStmt    struct{}
 	continueStmt struct{}
+	functionStmt struct {
+		name   token
+		params []token
+		body   []stmt
+	}
+	returnStmt struct {
+		keyword token
+		value   expr
+	}
 )

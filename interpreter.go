@@ -18,12 +18,13 @@ type interpreter struct {
 	stmts []stmt
 	env   scopeList
 	jp    jump
+	res   interface{}
 }
 
 func newInterpreter(stmts []stmt) *interpreter {
 	env := make(scopeList, 1)
 	env[0] = *newScope(nil)
-	return &interpreter{stmts: stmts, env: env, jp: J_NONE}
+	return &interpreter{stmts: stmts, env: env, jp: J_NONE, res: nil}
 }
 
 func (i *interpreter) run() {
@@ -57,6 +58,8 @@ func (w *whileStmt) exec(itp *interpreter) {
 			break
 		} else if itp.jp == J_CONTINUE {
 			itp.jp = J_NONE
+		} else if itp.jp == J_RETURN {
+			return
 		}
 		if w.increment != nil {
 			w.increment.eval(itp)
@@ -73,17 +76,6 @@ func (i *ifStmt) exec(itp *interpreter) {
 	} else if i.elseBranch != nil {
 		i.elseBranch.exec(itp)
 	}
-}
-
-func (b *blockStmt) exec(itp *interpreter) {
-	if itp.jp != J_NONE {
-		return
-	}
-	itp.env.push(*newScope(itp.env.peek()))
-	for _, s := range b.stmts {
-		s.exec(itp)
-	}
-	itp.env.pop()
 }
 
 func (v *varStmt) exec(itp *interpreter) {
@@ -114,6 +106,51 @@ func (e *exprStmt) exec(itp *interpreter) {
 		return
 	}
 	e.body.eval(itp)
+}
+
+func (r *returnStmt) exec(itp *interpreter) {
+	if itp.jp != J_NONE {
+		return
+	}
+	if r.value != nil {
+		itp.res = r.value.eval(itp)
+	}
+	itp.jp = J_RETURN
+}
+
+func (f *functionStmt) exec(itp *interpreter) {
+	if itp.jp != J_NONE {
+		return
+	}
+	fun := function{f}
+	itp.env.peek().define(f.name.text, fun)
+}
+
+func (b *blockStmt) exec(itp *interpreter) {
+	if itp.jp != J_NONE {
+		return
+	}
+	itp.env.push(*newScope(itp.env.peek()))
+	for _, s := range b.stmts {
+		s.exec(itp)
+	}
+	itp.env.pop()
+}
+
+func (c *call) eval(itp *interpreter) interface{} {
+	callee := c.callee.eval(itp)
+	args := make([]interface{}, 0)
+	for _, arg := range c.arguments {
+		args = append(args, arg.eval(itp))
+	}
+	fun, ok := callee.(function)
+	if !ok {
+		exitWithErr("Can only call functions")
+	}
+	if fun.arity() != len(args) {
+		exitWithErr("Expect %d arguments but get %d", fun.arity(), len(args))
+	}
+	return fun.call(itp, args)
 }
 
 func (l *logical) eval(itp *interpreter) interface{} {

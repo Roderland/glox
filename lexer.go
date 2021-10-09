@@ -171,13 +171,13 @@ func (l *lexer) match(c uint8) bool {
 }
 
 func (l *lexer) add(ttype tokenType, literal interface{}) {
-	token := token{
+	tk := token{
 		ttype:   ttype,
 		text:    l.source[l.left:l.right],
 		literal: literal,
 		line:    l.line,
 	}
-	l.tokens = append(l.tokens, token)
+	l.tokens = append(l.tokens, tk)
 }
 
 func (l *lexer) eof() bool {

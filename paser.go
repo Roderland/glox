@@ -26,7 +26,33 @@ func (p *parser) declaration() stmt {
 	if p.match(VAR) {
 		return p.varStatement()
 	}
+	if p.match(FUN) {
+		return p.functionStatement()
+	}
 	return p.statement()
+}
+
+func (p *parser) functionStatement() stmt {
+	name := p.consume(IDENTIFIER, "Expect a function name")
+	p.consume(LPAREN, "Expect '(' after function name")
+	params := make([]token, 0)
+	if !p.eof() && p.tokens[p.cur].ttype != RPAREN {
+		params = append(params, p.consume(IDENTIFIER, "Expect parameter name"))
+		for p.match(COMMA) {
+			if len(params) >= 255 {
+				exitWithErr("Can't have more than 255 parameters")
+			}
+			params = append(params, p.consume(IDENTIFIER, "Expect parameter name"))
+		}
+	}
+	p.consume(RPAREN, "Expect ')' after parameters")
+	p.consume(LBRACE, "Expect '{' before function body")
+	body := p.blockStatement()
+	return &functionStmt{
+		name:   name,
+		params: params,
+		body:   body,
+	}
 }
 
 func (p *parser) varStatement() stmt {
@@ -44,7 +70,7 @@ func (p *parser) statement() stmt {
 		return p.printStatement()
 	}
 	if p.match(LBRACE) {
-		return p.blockStatement()
+		return &blockStmt{p.blockStatement()}
 	}
 	if p.match(IF) {
 		return p.ifStatement()
@@ -67,7 +93,23 @@ func (p *parser) statement() stmt {
 			exitWithErr("[ line %d ] '%s' is outside loop", token.line, token.text)
 		}
 	}
+	if p.match(RETURN) {
+		return p.returnStatement()
+	}
 	return p.expressionStatement()
+}
+
+func (p *parser) returnStatement() stmt {
+	keyword := p.tokens[p.cur-1]
+	var value expr
+	if !p.eof() && p.tokens[p.cur].ttype != SEMICOLON {
+		value = p.expression()
+	}
+	p.consume(SEMICOLON, "Expect ';' after return value")
+	return &returnStmt{
+		keyword: keyword,
+		value:   value,
+	}
 }
 
 func (p *parser) forStatement() stmt {
@@ -136,13 +178,13 @@ func (p *parser) ifStatement() stmt {
 	}
 }
 
-func (p *parser) blockStatement() stmt {
+func (p *parser) blockStatement() []stmt {
 	stmts := make([]stmt, 0)
 	for !p.eof() && p.tokens[p.cur].ttype != RBRACE {
 		stmts = append(stmts, p.declaration())
 	}
 	p.consume(RBRACE, "Expect '}' after block")
-	return &blockStmt{stmts: stmts}
+	return stmts
 }
 
 func (p *parser) printStatement() stmt {
@@ -271,7 +313,38 @@ func (p *parser) unary() expr {
 			right:    right,
 		}
 	}
-	return p.primary()
+	return p.call()
+}
+
+func (p *parser) call() expr {
+	ep := p.primary()
+	for {
+		if p.match(LPAREN) {
+			ep = p.finishCall(ep)
+		} else {
+			break
+		}
+	}
+	return ep
+}
+
+func (p *parser) finishCall(callee expr) expr {
+	arguments := make([]expr, 0)
+	if !p.eof() && p.tokens[p.cur].ttype != RPAREN {
+		arguments = append(arguments, p.expression())
+		for p.match(COMMA) {
+			if len(arguments) >= 255 {
+				exitWithErr("Can't have more than 255 arguments")
+			}
+			arguments = append(arguments, p.expression())
+		}
+	}
+	paren := p.consume(RPAREN, "Expect ')' after arguments")
+	return &call{
+		callee:    callee,
+		paren:     paren,
+		arguments: arguments,
+	}
 }
 
 func (p *parser) primary() expr {

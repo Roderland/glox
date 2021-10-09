@@ -31,4 +31,9 @@ type (
 		operator token
 		right    expr
 	}
+	call struct {
+		callee    expr
+		paren     token
+		arguments []expr
+	}
 )
