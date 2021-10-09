@@ -2,7 +2,7 @@ package main
 
 type (
 	expr interface {
-		eval(scopes scopeList) interface{}
+		eval(*interpreter) interface{}
 	}
 	binary struct {
 		left     expr

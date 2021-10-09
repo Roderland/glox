@@ -2,7 +2,7 @@ package main
 
 type (
 	stmt interface {
-		exec(scopeList)
+		exec(*interpreter)
 	}
 	exprStmt struct {
 		body expr
@@ -25,5 +25,8 @@ type (
 	whileStmt struct {
 		condition expr
 		body      stmt
+		increment expr
 	}
+	breakStmt    struct{}
+	continueStmt struct{}
 )

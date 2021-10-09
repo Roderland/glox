@@ -7,10 +7,11 @@ import (
 type parser struct {
 	tokens []token
 	cur    int
+	inLoop bool
 }
 
 func newParser(tokens []token) *parser {
-	return &parser{tokens: tokens, cur: 0}
+	return &parser{tokens: tokens, cur: 0, inLoop: false}
 }
 
 func (p *parser) run() []stmt {
@@ -54,6 +55,18 @@ func (p *parser) statement() stmt {
 	if p.match(FOR) {
 		return p.forStatement()
 	}
+	if p.match(BREAK, CONTINUE) {
+		token := p.tokens[p.cur-1]
+		if p.inLoop {
+			if token.ttype == BREAK {
+				return &breakStmt{}
+			} else {
+				return &continueStmt{}
+			}
+		} else {
+			exitWithErr("[ line %d ] '%s' is outside loop", token.line, token.text)
+		}
+	}
 	return p.expressionStatement()
 }
 
@@ -77,15 +90,13 @@ func (p *parser) forStatement() stmt {
 		increment = p.expression()
 	}
 	p.consume(RPAREN, "Expect ')' after for clauses")
+	p.inLoop = true
 	body := p.statement()
-	if increment != nil {
-		stmts := make([]stmt, 0)
-		stmts = append(stmts, body, &exprStmt{increment})
-		body = &blockStmt{stmts}
-	}
+	p.inLoop = false
 	body = &whileStmt{
 		condition: condition,
 		body:      body,
+		increment: increment,
 	}
 	if initializer != nil {
 		stmts := make([]stmt, 0)
@@ -99,10 +110,13 @@ func (p *parser) whileStatement() stmt {
 	p.consume(LPAREN, "Expect '(' after while")
 	condition := p.expression()
 	p.consume(RPAREN, "Expect ')' after condition")
+	p.inLoop = true
 	body := p.statement()
+	p.inLoop = false
 	return &whileStmt{
 		condition: condition,
 		body:      body,
+		increment: nil,
 	}
 }
 

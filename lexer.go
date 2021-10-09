@@ -81,9 +81,9 @@ func (l *lexer) next() {
 		}
 	case '>':
 		if l.match('=') {
-			l.add(GREATER, nil)
-		} else {
 			l.add(GEQUAL, nil)
+		} else {
+			l.add(GREATER, nil)
 		}
 	case ' ':
 	case '\r':
@@ -118,6 +118,11 @@ func (l *lexer) identifier() {
 	s := l.source[l.left:l.right]
 	if tt, ok := keywords[s]; ok {
 		l.add(tt, nil)
+		if tt == BREAK || tt == CONTINUE {
+			if !l.match(';') {
+				exitWithErr("[ line %d ] Expect ';' at end", l.line)
+			}
+		}
 	} else {
 		l.add(IDENTIFIER, nil)
 	}

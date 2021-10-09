@@ -33,6 +33,8 @@ const (
 	FUN                        // "fun"
 	RETURN                     // "return"
 	PRINT                      // "print"
+	BREAK                      // "break"
+	CONTINUE                   // "continue"
 	STRING
 	NUMBER
 	IDENTIFIER
@@ -54,6 +56,8 @@ func init() {
 	keywords["fun"] = FUN
 	keywords["return"] = RETURN
 	keywords["print"] = PRINT
+	keywords["break"] = BREAK
+	keywords["continue"] = CONTINUE
 }
 
 type (
