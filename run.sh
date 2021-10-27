@@ -1,0 +1,1 @@
+go build & ./glox ./test.glox
