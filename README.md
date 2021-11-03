@@ -22,8 +22,8 @@ here are some test cases
 ./glox test_case/02-scope.glox
 ./glox test_case/03-scope.glox
 ```
-
-```shell
+## About lox language
+```python
 print "Hello, world!";
 
 // Boolean
