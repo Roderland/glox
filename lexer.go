@@ -3,19 +3,32 @@ package main
 import "strconv"
 
 type Lexer struct {
-	source  string
-	tokens  []Token
-	start   int
+	// 源代码
+	source string
+	// token流
+	tokens []Token
+	// token起始位置
+	start int
+	// token结束位置
 	current int
-	line    int
+	// 所在行
+	line int
 }
 
 func _Lexer(source string) *Lexer {
-	return &Lexer{source: source, tokens: []Token{}, start: 0, current: 0, line: 1}
+	return &Lexer{
+		source:  source,
+		tokens:  []Token{},
+		start:   0,
+		current: 0,
+		line:    1,
+	}
 }
 
+// 词法分析器处理
 func (lexer *Lexer) lex() []Token {
-	for !lexer.isEnd() {
+	for !lexer.eof() {
+		// 扫描下一个token
 		lexer.start = lexer.current
 		lexer.scanToken()
 	}
@@ -52,8 +65,9 @@ func (lexer *Lexer) scanToken() {
 	case '*':
 		lexer.addToken(STAR, nil)
 	case '/':
+		// 处理单行注释
 		if lexer.match('/') {
-			for !lexer.isEnd() && lexer.peek() != '\n' {
+			for !lexer.eof() && lexer.peek() != '\n' {
 				lexer.next()
 			}
 		} else {
@@ -84,13 +98,14 @@ func (lexer *Lexer) scanToken() {
 			lexer.addToken(LESS, nil)
 		}
 	case '"':
-		for !lexer.isEnd() && lexer.peek() != '"' {
+		// 处理字符串String
+		for !lexer.eof() && lexer.peek() != '"' {
 			if lexer.peek() == '\n' {
 				lexer.line++
 			}
 			lexer.next()
 		}
-		if lexer.isEnd() {
+		if lexer.eof() {
 			exitWithErr(lexer.line, "Unterminated string.")
 		}
 		lexer.next()
@@ -98,6 +113,7 @@ func (lexer *Lexer) scanToken() {
 		lexer.addToken(STRING, str)
 	default:
 		if isDigit(char) {
+			// 处理数字Number
 			for isDigit(lexer.peek()) {
 				lexer.next()
 			}
@@ -113,6 +129,7 @@ func (lexer *Lexer) scanToken() {
 			}
 			lexer.addToken(NUMBER, double)
 		} else if isAlpha(char) {
+			// 处理标识符Identifier
 			for isAlphaOrDigit(lexer.peek()) {
 				lexer.next()
 			}
@@ -128,7 +145,7 @@ func (lexer *Lexer) addToken(tokenType uint8, literal interface{}) {
 	lexer.tokens = append(lexer.tokens, _Token(tokenType, lexeme, literal, lexer.line))
 }
 
-func (lexer *Lexer) isEnd() bool {
+func (lexer *Lexer) eof() bool {
 	return lexer.current >= len(lexer.source)
 }
 
@@ -139,7 +156,7 @@ func (lexer *Lexer) next() byte {
 }
 
 func (lexer *Lexer) match(expected byte) bool {
-	if !lexer.isEnd() && lexer.source[lexer.current] == expected {
+	if !lexer.eof() && lexer.source[lexer.current] == expected {
 		lexer.current++
 		return true
 	}
@@ -147,7 +164,7 @@ func (lexer *Lexer) match(expected byte) bool {
 }
 
 func (lexer *Lexer) peek() byte {
-	if lexer.isEnd() {
+	if lexer.eof() {
 		return 0
 	}
 	return lexer.source[lexer.current]

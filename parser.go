@@ -3,23 +3,30 @@ package main
 import "reflect"
 
 type Parser struct {
-	tokens  []Token
+	// token流
+	tokens []Token
+	// 当前解析token的位置
 	current int
 }
 
 func _Parser(tokens []Token) *Parser {
-	return &Parser{tokens: tokens, current: 0}
+	return &Parser{
+		tokens:  tokens,
+		current: 0,
+	}
 }
 
 func (parser *Parser) parse() []Stmt {
-	statements := make([]Stmt, 0)
-	for !parser.isEnd() {
-		statements = append(statements, parser.declaration())
+	stmts := make([]Stmt, 0)
+	for !parser.eof() {
+		stmts = append(stmts, parser.declaration())
 	}
-	return statements
+	return stmts
 }
 
 /*  ===================  Statement  ===================  */
+
+// 函数声明，变量声明，其他语句
 func (parser *Parser) declaration() Stmt {
 	if parser.match(FUN) {
 		return parser.functionDeclaration()
@@ -30,10 +37,13 @@ func (parser *Parser) declaration() Stmt {
 	return parser.statement()
 }
 
+// 函数声明和定义
 func (parser *Parser) functionDeclaration() Stmt {
+	// 函数名称
 	name := parser.consume(IDENTIFIER, "Expect function name.")
 
 	parser.consume(LEFT_PAREN, "Expect '(' after function name.")
+	// 形式参数
 	params := make([]Token, 0)
 	if parser.peek().tokenType != RIGHT_PAREN {
 		for {
@@ -46,6 +56,7 @@ func (parser *Parser) functionDeclaration() Stmt {
 	parser.consume(RIGHT_PAREN, "Expect ')' after parameters.")
 
 	parser.consume(LEFT_BRACE, "Expect '{' before function body.")
+	// 函数体语句
 	stmts := make([]Stmt, 0)
 	for parser.peek().tokenType != RIGHT_BRACE {
 		stmts = append(stmts, parser.declaration())
@@ -55,16 +66,22 @@ func (parser *Parser) functionDeclaration() Stmt {
 	return functionStmt{name, params, stmts}
 }
 
+// 非函数变量声明和定义
 func (parser *Parser) varDeclaration() Stmt {
+	// 变量名称
 	name := parser.consume(IDENTIFIER, "Expect variable name.")
+
+	// 初始化表达式
 	var initializer Expr
 	if parser.match(EQUAL) {
 		initializer = parser.expression()
 	}
+
 	parser.consume(SEMICOLON, "Expect ';' after variable declaration.")
 	return varStmt{name, initializer}
 }
 
+// 其他语句
 func (parser *Parser) statement() Stmt {
 	if parser.match(PRINT) {
 		return parser.printStatement()
@@ -87,19 +104,26 @@ func (parser *Parser) statement() Stmt {
 	return parser.exprStatement()
 }
 
+// return语句
 func (parser *Parser) returnStatement() Stmt {
+	// return
 	keyword := parser.previous()
+
+	// 返回值表达式
 	var value Expr
 	if parser.peek().tokenType != SEMICOLON {
 		value = parser.expression()
 	}
+
 	parser.consume(SEMICOLON, "Expect ';' after return value.")
 	return returnStmt{keyword, value}
 }
 
+// for语句（解语法糖构造while语句）
 func (parser *Parser) forStatement() Stmt {
 	parser.consume(LEFT_PAREN, "Expect '(' after 'for'.")
 
+	// 初始化语句
 	var initializer Stmt
 	if parser.match(SEMICOLON) {
 		// no init
@@ -109,30 +133,37 @@ func (parser *Parser) forStatement() Stmt {
 		initializer = parser.exprStatement()
 	}
 
+	// 循环条件表达式
 	var condition Expr
 	if parser.peek().tokenType != SEMICOLON {
 		condition = parser.expression()
 	}
 	parser.consume(SEMICOLON, "Expect ';' after loop condition.")
 
+	// 自增表达式
 	var increment Expr
 	if parser.peek().tokenType != RIGHT_PAREN {
 		increment = parser.expression()
 	}
 	parser.consume(RIGHT_PAREN, "Expect ')' after for clauses.")
 
+	// 循环体语句
 	body := parser.statement()
 
+	// 将自增语句添加到循环体语句末尾
 	if increment != nil {
 		body = blockStmt{[]Stmt{body, exprStmt{increment}}}
 	}
 
+	// 条件语句为空时，将true填入while的条件表达式
 	if condition == nil {
 		condition = Literal{true}
 	}
 
+	// 构造while语句
 	var loop Stmt = whileStmt{condition, body}
 
+	// 初始化语句不为空时，将其插入while语句前
 	if initializer != nil {
 		loop = blockStmt{[]Stmt{initializer, loop}}
 	}
@@ -140,19 +171,27 @@ func (parser *Parser) forStatement() Stmt {
 	return loop
 }
 
+// while语句
 func (parser *Parser) whileStatement() Stmt {
 	parser.consume(LEFT_PAREN, "Expect '(' after 'while'.")
+	// 循环条件表达式
 	condition := parser.expression()
 	parser.consume(RIGHT_PAREN, "Expect ')' after condition.")
+	// while循环体
 	body := parser.statement()
+
 	return whileStmt{condition, body}
 }
 
+// if语句
 func (parser *Parser) ifStatement() Stmt {
 	parser.consume(LEFT_PAREN, "Expect '(' after 'if'.")
+	// 分支条件表达式
 	condition := parser.expression()
 	parser.consume(RIGHT_PAREN, "Expect ')' after if condition.")
+	// then分支语句
 	thenBranch := parser.statement()
+	// else分支语句
 	var elseBranch Stmt
 	if parser.match(ELSE) {
 		elseBranch = parser.statement()
@@ -160,6 +199,7 @@ func (parser *Parser) ifStatement() Stmt {
 	return ifStmt{condition, thenBranch, elseBranch}
 }
 
+// 块语句
 func (parser *Parser) blockStatement() Stmt {
 	stmts := make([]Stmt, 0)
 	for parser.peek().tokenType != RIGHT_BRACE {
@@ -169,19 +209,23 @@ func (parser *Parser) blockStatement() Stmt {
 	return blockStmt{stmts}
 }
 
+// print语句
 func (parser *Parser) printStatement() Stmt {
 	value := parser.expression()
 	parser.consume(SEMICOLON, "Expect ';' after value.")
-	return printStmt{expr: value}
+	return printStmt{value}
 }
 
+// 表达式语句
 func (parser *Parser) exprStatement() Stmt {
 	expr := parser.expression()
 	parser.consume(SEMICOLON, "Expect ';' after value.")
-	return exprStmt{expr: expr}
+	return exprStmt{expr}
 }
 
 /*  ===================  Expression  ===================  */
+
+// 表达式递归下降
 func (parser *Parser) expression() Expr {
 	return parser.assignment()
 }
@@ -194,10 +238,7 @@ func (parser *Parser) assignment() Expr {
 		right := parser.assignment()
 		if reflect.TypeOf(left) == reflect.TypeOf(Variable{}) {
 			name := left.(Variable).name
-			return Assign{
-				name:  name,
-				value: right,
-			}
+			return Assign{name, right}
 		}
 		exitWithErr(equal.line, "Invalid assignment target.")
 	}
@@ -333,7 +374,7 @@ func (parser *Parser) peek() Token {
 	return parser.tokens[parser.current]
 }
 
-func (parser *Parser) isEnd() bool {
+func (parser *Parser) eof() bool {
 	return parser.peek().tokenType == EOF
 }
 

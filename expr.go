@@ -8,35 +8,42 @@ import (
 type (
 	Expr interface {
 		eval(interpreter *Interpreter) interface{}
-		//resolve()
 	}
+
 	Literal struct {
 		value interface{}
 	}
+
 	Unary struct {
 		operator Token
 		right    Expr
 	}
+
 	Binary struct {
 		left     Expr
 		operator Token
 		right    Expr
 	}
+
 	Grouping struct {
 		expression Expr
 	}
+
 	Variable struct {
 		name Token
 	}
+
 	Assign struct {
 		name  Token
 		value Expr
 	}
+
 	Logical struct {
 		left     Expr
 		operator Token
 		right    Expr
 	}
+
 	Call struct {
 		callee Expr
 		paren  Token
@@ -55,8 +62,9 @@ func (u Unary) eval(interpreter *Interpreter) interface{} {
 		return -(right.(float64))
 	case BANG:
 		return !isTrue(right)
+	default:
+		return right
 	}
-	return nil
 }
 
 func (b Binary) eval(interpreter *Interpreter) interface{} {
@@ -105,12 +113,12 @@ func (g Grouping) eval(interpreter *Interpreter) interface{} {
 }
 
 func (v Variable) eval(interpreter *Interpreter) interface{} {
-	return interpreter.envir.get(v.name)
+	return interpreter.local.get(v.name)
 }
 
 func (a Assign) eval(interpreter *Interpreter) interface{} {
 	value := a.value.eval(interpreter)
-	interpreter.envir.assign(a.name, value)
+	interpreter.local.assign(a.name, value)
 	return value
 }
 
@@ -130,17 +138,20 @@ func (l Logical) eval(interpreter *Interpreter) interface{} {
 
 func (c Call) eval(interpreter *Interpreter) interface{} {
 	callee := c.callee.eval(interpreter)
+
 	args := make([]interface{}, len(c.args))
 	for i, arg := range c.args {
 		args[i] = arg.eval(interpreter)
 	}
 
 	fun, ok := callee.(Function)
+
 	if !ok {
 		exitWithErr(c.paren.line, "Can only call functions")
 	}
 	if fun.arity() != len(args) {
 		exitWithErr(c.paren.line, fmt.Sprintf("Expect %d arguments but get %d", fun.arity(), len(args)))
 	}
+
 	return fun.call(interpreter, args)
 }

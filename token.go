@@ -31,7 +31,6 @@ const (
 
 	// Keywords.
 	AND
-	CLASS
 	ELSE
 	FALSE
 	FUN
@@ -41,8 +40,6 @@ const (
 	OR
 	PRINT
 	RETURN
-	SUPER
-	THIS
 	TRUE
 	VAR
 	WHILE
@@ -66,8 +63,6 @@ func findType(text string) uint8 {
 	switch text {
 	case "and":
 		return AND
-	case "class":
-		return CLASS
 	case "else":
 		return ELSE
 	case "false":
@@ -86,10 +81,6 @@ func findType(text string) uint8 {
 		return PRINT
 	case "return":
 		return RETURN
-	case "super":
-		return SUPER
-	case "this":
-		return THIS
 	case "true":
 		return TRUE
 	case "var":

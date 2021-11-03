@@ -1,27 +1,3 @@
-# glox
-
-A Lox interpreter implemented with golang
-
-## Usage
-
-build your glox
-```shell
-go build glox
-```
-
-run some lox code
-```shell
-./glox ${InputFile}
-```
-
-here are some test cases
-```shell
-./glox test_case/01-scope.glox
-./glox test_case/02-scope.glox
-./glox test_case/03-scope.glox
-```
-
-```shell
 print "Hello, world!";
 
 // Boolean
@@ -89,5 +65,3 @@ fun sum(a, b) {
 }
 
 print sum(1, 2);
-```
-

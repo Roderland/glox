@@ -5,48 +5,47 @@ import "fmt"
 type (
 	Stmt interface {
 		exec(interpreter *Interpreter)
-		//resolve()
 	}
+
 	exprStmt struct {
 		expr Expr
 	}
+
 	printStmt struct {
 		expr Expr
 	}
+
 	varStmt struct {
 		name        Token
 		initializer Expr
 	}
+
 	blockStmt struct {
 		stmts []Stmt
 	}
+
 	ifStmt struct {
 		condition  Expr
 		thenBranch Stmt
 		elseBranch Stmt
 	}
+
 	whileStmt struct {
 		condition Expr
 		body      Stmt
 	}
+
 	functionStmt struct {
 		name   Token
 		params []Token
 		stmts  []Stmt
 	}
+
 	returnStmt struct {
 		keyword Token
 		value   Expr
 	}
 )
-
-//func (v varStmt) resolve() {
-//	declare(v.name)
-//	if v.initializer != nil {
-//		v.initializer.resolve()
-//	}
-//	define(v.name)
-//}
 
 func (e exprStmt) exec(interpreter *Interpreter) {
 	e.expr.eval(interpreter)
@@ -62,14 +61,14 @@ func (v varStmt) exec(interpreter *Interpreter) {
 	if v.initializer != nil {
 		value = v.initializer.eval(interpreter)
 	}
-	interpreter.envir.define(v.name.lexeme, value)
+	interpreter.local.define(v.name.lexeme, value)
 }
 
 func (b blockStmt) exec(interpreter *Interpreter) {
-	father := interpreter.envir
-	child := &Envir{
-		enclosing: father,
-		values:    map[string]interface{}{},
+	father := interpreter.local
+	child := &Table{
+		father: father,
+		values: map[string]interface{}{},
 	}
 	interpreter.enterScope(child)
 	defer interpreter.enterScope(father)
@@ -95,8 +94,8 @@ func (w whileStmt) exec(interpreter *Interpreter) {
 }
 
 func (f functionStmt) exec(interpreter *Interpreter) {
-	fun := Function{f, interpreter.envir}
-	interpreter.envir.define(f.name.lexeme, fun)
+	fun := Function{f}
+	interpreter.local.define(f.name.lexeme, fun)
 }
 
 func (r returnStmt) exec(interpreter *Interpreter) {
@@ -104,5 +103,5 @@ func (r returnStmt) exec(interpreter *Interpreter) {
 	if r.value != nil {
 		result = r.value.eval(interpreter)
 	}
-	interpreter.retVal = append(interpreter.retVal, result)
+	interpreter.returnStack = append(interpreter.returnStack, result)
 }
