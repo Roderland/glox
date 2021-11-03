@@ -2,6 +2,8 @@
 
 A Lox interpreter implemented with golang
 
+From the book: http://www.craftinginterpreters.com/
+
 ## Usage
 
 build your glox
