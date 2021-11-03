@@ -23,7 +23,7 @@ here are some test cases
 ./glox test_case/03-scope.glox
 ```
 ## About lox language
-```shell
+```go
 print "Hello, world!";
 
 // Boolean
