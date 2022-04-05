@@ -1,7 +1,5 @@
 package main
 
-import "fmt"
-
 type (
 	Stmt interface {
 		exec(interpreter *Interpreter)
@@ -53,7 +51,7 @@ func (e exprStmt) exec(interpreter *Interpreter) {
 
 func (p printStmt) exec(interpreter *Interpreter) {
 	value := p.expr.eval(interpreter)
-	fmt.Println(toString(value))
+	out(toString(value) + "\n")
 }
 
 func (v varStmt) exec(interpreter *Interpreter) {
