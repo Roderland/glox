@@ -22,24 +22,22 @@ func main() {
 	Play(string(bts))
 }
 
-func exitWithErr(line int, message string) {
-	out("[line %d] %s\n", line, message)
-	os.Exit(1)
-}
-
 var Buf bytes.Buffer
-var multiWriter io.Writer
+var writer io.Writer
 
-// Play 编译成动态链接库作为插件开放给其他程序调用
-func Play(code string) {
+func init() {
 	Buf = bytes.Buffer{}
-	// 向stdout和buffer中输出程序执行结果
-	multiWriter = io.MultiWriter(os.Stdout, &Buf)
-	tokens := _Lexer(code).lex()
-	stmts := _Parser(tokens).parse()
-	_Interpreter().interpret(stmts)
+	writer = io.MultiWriter(os.Stdout, &Buf)
 }
 
 func out(format string, a ...interface{}) {
-	_, _ = fmt.Fprintf(multiWriter, format, a...)
+	_, _ = fmt.Fprintf(writer, format, a...)
+}
+
+// Play 可以编译成动态链接库作为插件开放给其他程序调用
+func Play(code string) {
+	Buf.Reset()
+	tokens := _Lexer(code).lex()
+	stmts := _Parser(tokens).parse()
+	_Interpreter().interpret(stmts)
 }

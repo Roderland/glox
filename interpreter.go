@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"reflect"
+	"runtime"
 )
 
 type Interpreter struct {
@@ -61,4 +62,9 @@ func toString(obj interface{}) string {
 		return "<fun $" + obj.(Function).declaration.name.lexeme + ">"
 	}
 	return fmt.Sprint(obj)
+}
+
+func exitWithErr(line int, message string) {
+	out("[line %d] %s\n", line, message)
+	runtime.Goexit()
 }
