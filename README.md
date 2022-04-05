@@ -93,3 +93,36 @@ fun sum(a, b) {
 print sum(1, 2);
 ```
 
+## As plugin
+```shell
+// 编译成动态链接库作为插件
+go build -o glox.so -buildmode=plugin *.go
+go run ${宿主程序}.go glox.so
+```
+参考下面这个例程可以加载插件到你的程序中。
+
+其中，play函数作为调用glox解释器的入口，buf保存每次调用glox解释器执行的输出结果。
+```go
+//
+// load the application "glox"  from a plugin file "glox.so"
+//
+func loadPlugin(filename string) (func(string), *bytes.Buffer) {
+	p, err := plugin.Open(filename)
+	if err != nil {
+		log.Fatalf("cannot load plugin %v", filename)
+	}
+	xplay, err := p.Lookup("Play")
+	if err != nil {
+		log.Fatalf("cannot find Play in %v", filename)
+	}
+	play := xplay.(func(string))
+	xbuf, err := p.Lookup("Buf")
+	if err != nil {
+		log.Fatalf("cannot find Buf in %v", filename)
+	}
+	buf := xbuf.(*bytes.Buffer)
+
+	return play, buf
+}
+```
+
