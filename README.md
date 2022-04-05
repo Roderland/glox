@@ -4,6 +4,8 @@ A Lox interpreter implemented with golang
 
 From the book: http://www.craftinginterpreters.com/
 
+Try it Online on [Playground](http://122.112.198.192/)
+
 ## Usage
 
 build your glox
