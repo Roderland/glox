@@ -37,6 +37,29 @@ func (parser *Parser) declaration() Stmt {
 	return parser.statement()
 }
 
+// 其他语句
+func (parser *Parser) statement() Stmt {
+	if parser.match(PRINT) {
+		return parser.printStatement()
+	}
+	if parser.match(LEFT_BRACE) {
+		return parser.blockStatement()
+	}
+	if parser.match(IF) {
+		return parser.ifStatement()
+	}
+	if parser.match(WHILE) {
+		return parser.whileStatement()
+	}
+	if parser.match(FOR) {
+		return parser.forStatement()
+	}
+	if parser.match(RETURN) {
+		return parser.returnStatement()
+	}
+	return parser.exprStatement()
+}
+
 // 函数声明和定义
 func (parser *Parser) functionDeclaration() Stmt {
 	// 函数名称
@@ -79,29 +102,6 @@ func (parser *Parser) varDeclaration() Stmt {
 
 	parser.consume(SEMICOLON, "Expect ';' after variable declaration.")
 	return varStmt{name, initializer}
-}
-
-// 其他语句
-func (parser *Parser) statement() Stmt {
-	if parser.match(PRINT) {
-		return parser.printStatement()
-	}
-	if parser.match(LEFT_BRACE) {
-		return parser.blockStatement()
-	}
-	if parser.match(IF) {
-		return parser.ifStatement()
-	}
-	if parser.match(WHILE) {
-		return parser.whileStatement()
-	}
-	if parser.match(FOR) {
-		return parser.forStatement()
-	}
-	if parser.match(RETURN) {
-		return parser.returnStatement()
-	}
-	return parser.exprStatement()
 }
 
 // return语句

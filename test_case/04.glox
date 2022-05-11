@@ -1,0 +1,7 @@
+// 逻辑运算符的短路功能测试
+fun a() { print "a"; return true; }
+fun b() { print "b"; return false; }
+
+print false and a() or b();
+print true or b() and a();
+

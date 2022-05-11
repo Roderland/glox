@@ -7,12 +7,9 @@ import (
 )
 
 type Interpreter struct {
-	// 全局变量表
-	global Table
-	// 当前作用域变量表
-	local *Table
-	// 函数调用返回值保存栈
-	returnStack []interface{}
+	global      Table         // 全局变量表
+	local       *Table        // 当前作用域变量表
+	returnStack []interface{} // 函数调用返回值保存栈
 }
 
 func _Interpreter() *Interpreter {
