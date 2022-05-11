@@ -20,9 +20,9 @@ run some lox code
 
 here are some test cases
 ```shell
-./glox test_case/01-scope.glox
-./glox test_case/02-scope.glox
-./glox test_case/03-scope.glox
+./glox test_case/01.glox
+./glox test_case/02.glox
+./glox test_case/03.glox
 ```
 ## About lox language
 ```shell
