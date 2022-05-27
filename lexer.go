@@ -73,6 +73,10 @@ func (lexer *Lexer) scanToken() {
 		} else {
 			lexer.addToken(SLASH, nil)
 		}
+	case '#':
+		for !lexer.eof() && lexer.peek() != '\n' {
+			lexer.next()
+		}
 	case '!':
 		if lexer.match('=') {
 			lexer.addToken(BANG_EQUAL, nil)
